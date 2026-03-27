@@ -1,4 +1,4 @@
-# InterviewAI - AI-Powered Interview Preparation
+# Interview.AI - AI-Powered Interview Preparation
 
 An AI-powered interview preparation platform for students and freshers. Practice technical and HR interviews with real-time feedback, detailed scoring, and personalized improvement suggestions.
 
