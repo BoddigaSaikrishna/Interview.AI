@@ -1,4 +1,12 @@
 {
+  "name": "interview-ai",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "start": "node backend/server.js",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && node server.js"
+  },
   "dependencies": {
     "body-parser": "^2.2.2",
     "express": "^5.2.1",

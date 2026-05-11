@@ -16,6 +16,7 @@ import {
   Award,
   CheckCircle2
 } from 'lucide-react';
+import { FirmsSection } from '@/components/FirmsSection';
 
 export default function Index() {
   const { user, loading } = useAuth();
@@ -198,6 +199,8 @@ export default function Index() {
           </div>
         </div>
       </section>
+
+      <FirmsSection />
 
       {/* CTA Section */}
       <section className="py-24 gradient-hero relative overflow-hidden">

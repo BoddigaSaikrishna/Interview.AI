@@ -91,24 +91,18 @@ export default function Results() {
       setIsLoading(false);
       return;
     }
-    // Function to send result email via Supabase Edge Function
+    // Function to send result email via Express backend
     const sendResultEmail = async (toEmail: string, evaluation: EvaluationResult, session: any) => {
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-result-email`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify({
-              toEmail,
-              interviewType: session.interview_type,
-              evaluation,
-            }),
-          }
-        );
+        const response = await fetch('/api/send-result-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            toEmail,
+            interviewType: session.interview_type,
+            evaluation,
+          }),
+        });
 
         if (response.ok) {
           toast({

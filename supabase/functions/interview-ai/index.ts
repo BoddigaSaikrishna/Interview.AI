@@ -146,7 +146,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'meta-llama/Llama-3.2-3B-Instruct',
+        model: 'meta-llama/Meta-Llama-3-8B-Instruct',
         messages: formattedMessages,
         max_tokens: 1024,
         temperature: 0.7,
