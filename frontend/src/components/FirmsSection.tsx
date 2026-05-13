@@ -4,30 +4,35 @@ import { Card, CardContent } from './ui/card';
 /* ── Inline SVG logos — always load, no external CDN dependency ────────── */
 
 const MetaLogo = () => (
-  <svg viewBox="0 0 512 512" className="h-8 md:h-10 w-auto" fill="currentColor">
-    <path d="M355.6 304.6c19.1 31.4 39.7 55.5 57.7 55.5 13.6 0 22.7-14 22.7-46.8 0-69.5-40.3-152.4-88.8-205.1-30.5-33.1-62.4-50.2-89.7-50.2-38.5 0-65.4 36.8-96.5 98.6l-7.6 15.2C128.2 228.2 108.6 269 93 297.4c-23.4 42.6-42.6 62.7-67.1 62.7v56c44.4 0 75.3-26.9 105.7-82.4 10.2-18.6 21-40.7 33.1-66.7l7.7-15.4C200.4 191 223.7 148 245.5 148c20.3 0 48.3 41.4 72.4 84.6l10.8 18.9c10.4 18 19.6 34.6 26.9 53.1zm0 0" />
+  <svg viewBox="0 0 180 50" className="h-8 md:h-10 w-auto">
+    {/* Meta infinity symbol */}
+    <path d="M25 25c0-8 4-15 10-15s8 5 12 12l3 6 3-6c4-7 6-12 12-12s10 7 10 15-4 15-10 15-8-5-12-12l-3-6-3 6c-4 7-6 12-12 12S25 33 25 25z" fill="#0668E1" stroke="#0668E1" strokeWidth="3" fillOpacity="0"/>
+    <text fontFamily="'Helvetica Neue', Arial, sans-serif" fontWeight="700" fontSize="22" y="33" x="82" fill="#0668E1">Meta</text>
   </svg>
 );
 
 const GoogleLogo = () => (
-  <svg viewBox="0 0 488 512" className="h-8 md:h-10 w-auto">
-    <path fill="#4285F4" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"/>
+  <svg viewBox="0 0 272 92" className="h-8 md:h-10 w-auto">
+    <path fill="#4285F4" d="M115.75 47.18c0 12.77-9.99 22.18-22.25 22.18s-22.25-9.41-22.25-22.18C71.25 34.32 81.24 25 93.5 25s22.25 9.32 22.25 22.18zm-9.74 0c0-7.98-5.79-13.44-12.51-13.44S80.99 39.2 80.99 47.18c0 7.9 5.79 13.44 12.51 13.44s12.51-5.54 12.51-13.44z"/>
+    <path fill="#EA4335" d="M163.75 47.18c0 12.77-9.99 22.18-22.25 22.18s-22.25-9.41-22.25-22.18C119.25 34.32 129.24 25 141.5 25s22.25 9.32 22.25 22.18zm-9.74 0c0-7.98-5.79-13.44-12.51-13.44s-12.51 5.46-12.51 13.44c0 7.9 5.79 13.44 12.51 13.44s12.51-5.54 12.51-13.44z"/>
+    <path fill="#FBBC05" d="M209.75 26.34v39.82c0 16.38-9.66 23.07-21.08 23.07-10.75 0-17.22-7.19-19.66-13.07l8.48-3.53c1.51 3.61 5.21 7.87 11.17 7.87 7.31 0 11.84-4.51 11.84-13v-3.19h-.34c-2.18 2.69-6.38 5.04-11.68 5.04-11.09 0-21.25-9.66-21.25-22.09 0-12.52 10.16-22.26 21.25-22.26 5.29 0 9.49 2.35 11.68 4.96h.34v-3.61h9.25zm-8.56 20.92c0-7.81-5.21-13.52-11.84-13.52-6.72 0-12.35 5.71-12.35 13.52 0 7.73 5.63 13.36 12.35 13.36 6.63 0 11.84-5.63 11.84-13.36z"/>
+    <path fill="#4285F4" d="M225 3v65h-9.5V3h9.5z"/>
+    <path fill="#34A853" d="M262.02 54.48l7.56 5.04c-2.44 3.61-8.32 9.83-18.48 9.83-12.6 0-22.01-9.74-22.01-22.18 0-13.19 9.49-22.18 20.92-22.18 11.51 0 17.14 9.16 18.98 14.11l1.01 2.52-29.65 12.28c2.27 4.45 5.8 6.72 10.75 6.72 4.96 0 8.4-2.44 10.92-6.14zm-23.27-7.98l19.82-8.23c-1.09-2.77-4.37-4.7-8.23-4.7-4.95 0-11.84 4.37-11.59 12.93z"/>
+    <path fill="#EA4335" d="M35.29 41.19V32H67c.31 1.64.47 3.58.47 5.68 0 7.06-1.93 15.79-8.15 22.01-6.05 6.3-13.78 9.66-24.02 9.66C16.32 69.35.36 53.89.36 34.91.36 15.93 16.32.47 35.3.47c10.5 0 17.98 4.12 23.6 9.49l-6.64 6.64c-4.03-3.78-9.49-6.72-16.97-6.72-13.86 0-24.7 11.17-24.7 25.03 0 13.86 10.84 25.03 24.7 25.03 8.99 0 14.11-3.61 17.39-6.89 2.66-2.66 4.41-6.46 5.1-11.65l-22.49-.21z"/>
   </svg>
 );
 
 const AmazonLogo = () => (
   <svg viewBox="0 0 300 100" className="h-8 md:h-10 w-auto">
-    {/* "amazon" text */}
     <text fontFamily="Arial, Helvetica, sans-serif" fontWeight="700" fontSize="48" y="55" x="20" fill="currentColor" letterSpacing="-1">amazon</text>
-    {/* Smile arrow */}
     <path d="M45 72 C80 92, 180 95, 230 72" fill="none" stroke="#FF9900" strokeWidth="5" strokeLinecap="round"/>
     <path d="M218 62 L232 72 L220 78" fill="none" stroke="#FF9900" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
 const NetflixLogo = () => (
-  <svg viewBox="0 0 111 30" className="h-8 md:h-10 w-auto">
-    <path fill="#E50914" d="M105.06 1.519l-.005.013v.005l-3.398 8.929 3.482 9.14v.009l.009.014c.648 1.707.651 3.238.07 4.244-.704 1.22-2.17 1.675-3.095 1.755l-.062.005-.056.022-1.6.644-.005.002 3.512 3.152.235-.051c2.004-.432 3.778-1.63 4.85-3.487 1.082-1.876 1.264-4.202.296-6.75l-.012-.032-7.22-18.614zM89.21 1.087L83.6 16.073 77.85 1.087H71.476l.005.013v28.318h5.068V13.203l4.482 11.76h5.148l4.493-11.832v16.287h5.069V1.1h-6.53zM42.982 1.087v5.069h6.938v23.262h5.49V6.156h6.938V1.087H42.982zM22.723 24.418V16.49h8.684v-5.069h-8.684V6.156h10.129V1.087H17.232v28.331h15.921v-5.069H22.723l.001.069zm86.334-6.46c0 0 0 0 0 0zM17.078 29.418h-.005.005zM.378 1.087v28.331h5.49V16.49h7.427v-5.069H5.868V6.156h9.553V1.087H.378zM111 1.087v28.331h-5.39V1.087H111z"/>
+  <svg viewBox="0 0 120 40" className="h-8 md:h-10 w-auto">
+    <text fontFamily="'Arial Black', 'Helvetica Neue', Arial, sans-serif" fontWeight="900" fontSize="36" y="32" x="5" fill="#E50914" letterSpacing="3">NETFLIX</text>
   </svg>
 );
 
@@ -51,14 +56,14 @@ const TCSLogo = () => (
 );
 
 const JPMorganLogo = () => (
-  <svg viewBox="0 0 300 80" className="h-8 md:h-10 w-auto">
-    {/* JP Morgan octagonal symbol */}
-    <g transform="translate(10, 5)">
-      <polygon points="35,0 55,0 70,15 70,35 55,50 35,50 20,35 20,15" fill="none" stroke="currentColor" strokeWidth="3"/>
-      <polygon points="35,8 55,8 64,17 64,33 55,42 35,42 26,33 26,17" fill="currentColor" opacity="0.15"/>
+  <svg viewBox="0 0 300 55" className="h-8 md:h-10 w-auto">
+    {/* JP Morgan Chase octagon mark */}
+    <g transform="translate(5, 3)">
+      <path d="M24 0L36 0L48 12L48 24L36 36L24 36L12 24L12 12Z" fill="#1A73E8" />
+      <path d="M22 8L30 8L38 16L38 24L30 32L22 32L14 24L14 16Z" fill="white" />
+      <path d="M24 12L30 12L34 16L34 22L30 26L24 26L20 22L20 16Z" fill="#1A73E8" />
     </g>
-    {/* Text */}
-    <text fontFamily="Georgia, 'Times New Roman', serif" fontWeight="400" fontSize="24" y="38" x="90" fill="currentColor" letterSpacing="1">J.P.Morgan</text>
+    <text fontFamily="Georgia, 'Times New Roman', serif" fontWeight="400" fontSize="22" y="30" x="60" fill="currentColor" letterSpacing="0.5">J.P. Morgan</text>
   </svg>
 );
 
@@ -107,18 +112,18 @@ export const FirmsSection: React.FC = () => {
           </p>
         </div>
 
-        <Card className="max-w-5xl mx-auto border-0 shadow-card bg-white/50 backdrop-blur-sm">
+        <Card className="max-w-5xl mx-auto border border-border/50 shadow-xl bg-white dark:bg-slate-800">
           <CardContent className="p-8 sm:p-12">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 items-center justify-items-center">
               {firms.map((firm) => (
                 <div 
                   key={firm.name} 
-                  className="group relative flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 hover:bg-white hover:shadow-soft"
+                  className="group relative flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:shadow-lg"
                 >
-                  <div className="text-gray-700 transition-all duration-300 group-hover:scale-110">
+                  <div className="text-gray-800 dark:text-gray-100 transition-all duration-300 group-hover:scale-110">
                     <firm.Logo />
                   </div>
-                  <span className="mt-2 text-xs font-medium text-muted-foreground">
+                  <span className="mt-2 text-xs font-medium text-gray-600 dark:text-gray-300">
                     {firm.name}
                   </span>
                 </div>
