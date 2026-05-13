@@ -199,10 +199,14 @@ function buildHtmlEmail(toEmail, interviewType, evaluation) {
 </html>`;
 }
 
+// ── Static Frontend (production) ────────────────────────────────────────────
+const frontendDist = path.join(__dirname, "../frontend/dist");
+app.use(express.static(frontendDist));
+
 // ── Routes ───────────────────────────────────────────────────────────────────
 
 // Health check
-app.get("/", (req, res) => {
+app.get("/api/health", (req, res) => {
   res.json({ status: "ok", service: "Interview AI Backend", port: PORT });
 });
 
@@ -269,10 +273,6 @@ app.post("/api/send-result-email", async (req, res) => {
     });
   }
 });
-
-// ── Static Frontend (production) ────────────────────────────────────────────
-const frontendDist = path.join(__dirname, "../frontend/dist");
-app.use(express.static(frontendDist));
 
 // React Router fallback — serve index.html for all non-API routes
 app.get("*", (req, res) => {
