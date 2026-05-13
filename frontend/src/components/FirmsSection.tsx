@@ -16,9 +16,12 @@ const GoogleLogo = () => (
 );
 
 const AmazonLogo = () => (
-  <svg viewBox="0 0 448 512" className="h-8 md:h-10 w-auto">
-    <path fill="#FF9900" d="M257.2 162.7c-48.7 1.8-169.5 15.5-169.5 117.5 0 109.5 138.3 114 183.5 43.2 6.5 10.2 35.4 37.5 45 46.4l56.8-56S341 288.9 341 261.4V114.3C341 89 316.5 32 228.7 32 140.7 32 94 87 94 136.3l73.5 6.8c16.3-49.5 54.2-49.5 54.2-49.5 40.7-.1 40.7 35.4 35.5 69.1zM257.2 246c-24.9 0-77 16.5-77 67.2 0 36.8 26.7 59.5 55.2 59.5 35.5 0 67.5-33.5 67.5-81.2 0-20.5-1.2-45.5-45.7-45.5z"/>
-    <path fill="#FF9900" d="M412.1 416.6c-28.2 20.1-137.2 85.5-265.6 85.5-134.2 0-252-50-341.5-133 0 0 22.5 17 35 17 0 0-12.5-12.5-12.5-12.5C-15 398.6 73.3 462.5 201 462.5c94.3 0 183.6-39.4 230-73.4l-18.9 27.5z" transform="translate(36,0)"/>
+  <svg viewBox="0 0 300 100" className="h-8 md:h-10 w-auto">
+    {/* "amazon" text */}
+    <text fontFamily="Arial, Helvetica, sans-serif" fontWeight="700" fontSize="48" y="55" x="20" fill="currentColor" letterSpacing="-1">amazon</text>
+    {/* Smile arrow */}
+    <path d="M45 72 C80 92, 180 95, 230 72" fill="none" stroke="#FF9900" strokeWidth="5" strokeLinecap="round"/>
+    <path d="M218 62 L232 72 L220 78" fill="none" stroke="#FF9900" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
@@ -48,8 +51,14 @@ const TCSLogo = () => (
 );
 
 const JPMorganLogo = () => (
-  <svg viewBox="0 0 200 50" className="h-8 md:h-10 w-auto" fill="currentColor">
-    <text fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="20" y="32" x="10">J.P. Morgan</text>
+  <svg viewBox="0 0 300 80" className="h-8 md:h-10 w-auto">
+    {/* JP Morgan octagonal symbol */}
+    <g transform="translate(10, 5)">
+      <polygon points="35,0 55,0 70,15 70,35 55,50 35,50 20,35 20,15" fill="none" stroke="currentColor" strokeWidth="3"/>
+      <polygon points="35,8 55,8 64,17 64,33 55,42 35,42 26,33 26,17" fill="currentColor" opacity="0.15"/>
+    </g>
+    {/* Text */}
+    <text fontFamily="Georgia, 'Times New Roman', serif" fontWeight="400" fontSize="24" y="38" x="90" fill="currentColor" letterSpacing="1">J.P.Morgan</text>
   </svg>
 );
 
