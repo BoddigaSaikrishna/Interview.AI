@@ -115,10 +115,10 @@ export const FirmsSection: React.FC = () => {
                   key={firm.name} 
                   className="group relative flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-300 hover:bg-white hover:shadow-soft"
                 >
-                  <div className="opacity-60 grayscale group-hover:opacity-100 group-hover:grayscale-0 transition-all duration-300 text-gray-800">
+                  <div className="text-gray-700 transition-all duration-300 group-hover:scale-110">
                     <firm.Logo />
                   </div>
-                  <span className="mt-2 text-xs font-medium text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="mt-2 text-xs font-medium text-muted-foreground">
                     {firm.name}
                   </span>
                 </div>
