@@ -17,6 +17,7 @@ export type Database = {
           programming_language: string | null
           difficulty: string
           company_type: string | null
+          resume_text: string | null
           status: string
           technical_score: number | null
           hr_score: number | null
@@ -36,6 +37,7 @@ export type Database = {
           programming_language?: string | null
           difficulty: string
           company_type?: string | null
+          resume_text?: string | null
           status?: string
           technical_score?: number | null
           hr_score?: number | null
@@ -55,6 +57,7 @@ export type Database = {
           programming_language?: string | null
           difficulty?: string
           company_type?: string | null
+          resume_text?: string | null
           status?: string
           technical_score?: number | null
           hr_score?: number | null

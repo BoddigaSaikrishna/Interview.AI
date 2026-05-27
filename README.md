@@ -10,6 +10,7 @@ An AI-powered interview preparation platform for students and freshers. Practice
 - **Difficulty Levels**: Beginner, Intermediate, Advanced
 - **Real-time Feedback**: Get instant AI-powered evaluation
 - **Score Analytics**: Track your progress with detailed metrics
+- **Automatic Email Reports**: Interview scores are automatically sent to your email with detailed feedback
 
 ## Getting Started
 

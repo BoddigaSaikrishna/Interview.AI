@@ -17,6 +17,7 @@ export interface InterviewConfig {
   programmingLanguage?: ProgrammingLanguage;
   difficulty: Difficulty;
   companyType: CompanyType;
+  resumeText?: string;
 }
 
 export interface InterviewSession {
@@ -25,6 +26,7 @@ export interface InterviewSession {
   interviewType: InterviewType;
   programmingLanguage?: string;
   difficulty: Difficulty;
+  resumeText?: string;
   status: 'in_progress' | 'completed';
   technicalScore?: number;
   hrScore?: number;

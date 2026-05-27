@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,16 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 import { 
   Send, 
   Loader2, 
@@ -19,7 +29,10 @@ import {
   User,
   Timer,
   Mic,
-  MicOff
+  MicOff,
+  Video,
+  VideoOff,
+  FileText
 } from 'lucide-react';
 import { Message, InterviewType, Difficulty, InterviewPhase } from '@/types/interview';
 
@@ -29,7 +42,11 @@ export default function Interview() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const [resumeText, setResumeText] = useState<string | null>(
+    (location.state as any)?.resumeText ?? null
+  );
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -45,10 +62,16 @@ export default function Interview() {
   const [isListening, setIsListening] = useState(false);
   const [supportsSpeechRecognition, setSupportsSpeechRecognition] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const focusLostCountRef = useRef(0);
   const [focusLostCount, setFocusLostCount] = useState(0);
   const [isLockedDueToFocusLoss, setIsLockedDueToFocusLoss] = useState(false);
+  const [showFocusWarning, setShowFocusWarning] = useState(false);
   const [interviewStartTime, setInterviewStartTime] = useState<Date | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  
+  const [isVideoEnabled, setIsVideoEnabled] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -130,6 +153,11 @@ export default function Interview() {
     setProgrammingLanguage(session.programming_language ?? undefined);
     setDifficulty(session.difficulty as Difficulty);
     
+    // Load resume text from session if not already set via navigation state
+    if (!resumeText && session.resume_text) {
+      setResumeText(session.resume_text);
+    }
+    
     // Set initial phase based on interview type
     if (session.interview_type === 'hr') {
       setCurrentPhase('hr');
@@ -188,7 +216,11 @@ export default function Interview() {
     recognitionRef.current.onerror = (err: any) => {
       console.error('Speech recognition error', err);
       if (err.error !== 'no-speech') {
-        toast({ title: 'Voice Error', description: `Speech recognition error: ${err.error}`, variant: 'destructive' });
+        let description = `Speech recognition error: ${err.error}`;
+        if (err.error === 'not-allowed') {
+          description = 'Microphone access was denied. Please allow microphone access in your browser settings and try again.';
+        }
+        toast({ title: 'Voice Error', description, variant: 'destructive' });
       }
       setIsListening(false);
     };
@@ -242,30 +274,119 @@ export default function Interview() {
     if (isListening) stopListening(); else startListening();
   };
 
-  // Detect when the user switches tabs or the window loses focus.
+  const startCamera = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Not supported');
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setIsVideoEnabled(true);
+    } catch (err: any) {
+      console.error('Error accessing camera:', err);
+      let description = 'Could not access the camera. Please check permissions.';
+      
+      if (err.name === 'NotAllowedError' || err.message === 'Permission denied') {
+        description = 'Camera access was denied. Please allow camera access in your browser settings and try again.';
+      } else if (err.name === 'NotFoundError' || err.message === 'Requested device not found') {
+        description = 'No camera found on your device.';
+      } else if (!window.isSecureContext || err.message === 'Not supported') {
+        description = 'Camera access requires a secure context (HTTPS or localhost).';
+      }
+
+      toast({
+        title: 'Camera Error',
+        description,
+        variant: 'destructive',
+      });
+      setIsVideoEnabled(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsVideoEnabled(false);
+  };
+
+  const toggleCamera = () => {
+    if (isVideoEnabled) {
+      stopCamera();
+    } else {
+      startCamera();
+    }
+  };
+
+  // Cleanup camera on unmount
   useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
+  // Auto-start camera when interview starts (only in secure context)
+  useEffect(() => {
+    if (!isInitializing && !isVideoEnabled && !streamRef.current) {
+      // Camera requires HTTPS or localhost — skip auto-start otherwise
+      if (window.isSecureContext) {
+        startCamera();
+      }
+    }
+  }, [isInitializing]);
+
+  // Detect when the user switches tabs.
+  useEffect(() => {
+    let lastTriggerTime = 0;
+
     const onHidden = () => {
-      setFocusLostCount(c => c + 1);
+      // Prevent double firing within a short time window
+      const now = Date.now();
+      if (now - lastTriggerTime < 1000) return;
+      lastTriggerTime = now;
+
       stopListening();
       setIsLoading(false);
-      setIsLockedDueToFocusLoss(true);
-      toast({ title: 'Focus lost', description: 'You left the interview tab. The interview is paused/locked.', variant: 'destructive' });
 
-      // End interview on focus loss
-      setTimeout(() => {
+      // Extract tracking from React's state updater to prevent Strict Mode issues
+      focusLostCountRef.current += 1;
+      const next = focusLostCountRef.current;
+      setFocusLostCount(next);
+
+      if (next <= 3) {
+        setIsLockedDueToFocusLoss(true);
+        setShowFocusWarning(true);
+        toast({
+          title: 'Focus lost',
+          description: `You left the interview tab. Warning ${next}/3.`,
+          variant: 'destructive',
+        });
+      } else {
+        // Exceeded allowed switches: close the interview
+        toast({
+          title: 'Interview closed',
+          description: 'You left the tab too many times — automatically closing the interview.',
+          variant: 'destructive',
+        });
         if (sessionId) navigate(`/results/${sessionId}?interrupted=true`);
-      }, 1200);
+      }
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') onHidden();
     };
 
-    window.addEventListener('blur', onHidden);
+    // Note: Removed 'blur' to avoid double-firing or triggering when just clicking a separate window monitor.
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      window.removeEventListener('blur', onHidden);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [navigate, sessionId]);
@@ -280,20 +401,27 @@ export default function Interview() {
     setIsLoading(true);
 
     try {
+      const requestBody: Record<string, any> = {
+        messages: conversationMessages.map(m => ({ role: m.role, content: m.content })),
+        interviewType: type,
+        programmingLanguage: language,
+        difficulty: diff,
+        action: 'chat',
+        currentPhase: phase,
+      };
+
+      // Include resume text if available
+      if (resumeText) {
+        requestBody.resumeText = resumeText;
+      }
+
       const response = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
-        body: JSON.stringify({
-          messages: conversationMessages.map(m => ({ role: m.role, content: m.content })),
-          interviewType: type,
-          programmingLanguage: language,
-          difficulty: diff,
-          action: 'chat',
-          currentPhase: phase,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -542,6 +670,21 @@ export default function Interview() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <AlertDialog open={showFocusWarning} onOpenChange={setShowFocusWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Warning: Left Interview Tab</AlertDialogTitle>
+            <AlertDialogDescription>
+              You switched away from the interview. This is warning <strong>{focusLostCount} of 3</strong>. If you switch tabs more than 3 times, the interview will automatically close and submit.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => { setShowFocusWarning(false); setIsLockedDueToFocusLoss(false); }}>
+              I Understand
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b">
         <div className="container mx-auto px-4 py-3">
@@ -563,6 +706,23 @@ export default function Interview() {
             </div>
             
             <div className="flex items-center gap-4">
+              {/* Resume Badge */}
+              {resumeText && (
+                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <FileText className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Resume-Based</span>
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleCamera}
+                className={isVideoEnabled ? 'text-primary border-primary/50' : 'text-muted-foreground'}
+                title={isVideoEnabled ? 'Turn off camera' : 'Turn on camera'}
+              >
+                {isVideoEnabled ? <Video className="w-4 h-4 mr-2" /> : <VideoOff className="w-4 h-4 mr-2" />}
+                {isVideoEnabled ? 'Video On' : 'Video Off'}
+              </Button>
               {/* Timer */}
               <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg">
                 <Timer className="w-4 h-4 text-primary" />
@@ -593,6 +753,19 @@ export default function Interview() {
           </div>
         </div>
       </header>
+
+      {/* Floating Video Preview */}
+      {isVideoEnabled && (
+        <div className="fixed top-24 right-4 z-40 w-32 h-44 bg-black/80 border border-primary/20 rounded-xl overflow-hidden shadow-2xl flex items-center justify-center animate-in fade-in zoom-in slide-in-from-top-4 duration-300">
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            playsInline 
+            muted 
+            className="w-full h-full object-cover transform -scale-x-100" 
+          />
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto">

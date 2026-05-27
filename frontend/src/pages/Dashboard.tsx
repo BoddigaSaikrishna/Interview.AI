@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import Leaderboard from '@/components/Leaderboard';
 import RecentSessionsList from '@/components/RecentSessionsList';
+import ResumeUpload from '@/components/ResumeUpload';
 import {
   LogOut, 
   Play, 
@@ -43,6 +44,7 @@ export default function Dashboard() {
   const [programmingLanguage, setProgrammingLanguage] = useState<ProgrammingLanguage>('python');
   const [difficulty, setDifficulty] = useState<Difficulty>('beginner');
   const [companyType, setCompanyType] = useState<CompanyType | undefined>(undefined);
+  const [resumeText, setResumeText] = useState<string | null>(null);
   const [recentSessions, setRecentSessions] = useState<InterviewSession[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -100,6 +102,7 @@ export default function Dashboard() {
           programming_language: interviewType !== 'hr' ? programmingLanguage : null,
           difficulty,
           company_type: companyType,
+          resume_text: resumeText,
           status: 'in_progress',
         })
         .select()
@@ -142,7 +145,7 @@ export default function Dashboard() {
 
     const sessionId = result.data?.id;
     navigate(`/interview/${sessionId}`, { 
-      state: { companyType } 
+      state: { companyType, resumeText } 
     });
   };
 
@@ -348,6 +351,12 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
+            {/* Resume Upload */}
+            <ResumeUpload
+              onResumeExtracted={setResumeText}
+              resumeText={resumeText}
+            />
+
             {/* Start Button */}
             <Button 
               size="lg" 
@@ -356,7 +365,7 @@ export default function Dashboard() {
               disabled={!companyType}
             >
               <Play className="w-5 h-5 mr-2" />
-              Start Interview
+              {resumeText ? '🎯 Start Resume-Based Interview' : 'Start Interview'}
               <ChevronRight className="w-5 h-5 ml-2" />
             </Button>
             {!companyType && (

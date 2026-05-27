@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,8 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/interview-ai
 
 export default function Results() {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const [searchParams] = useSearchParams();
+  const isInterrupted = searchParams.get('interrupted') === 'true';
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -47,6 +49,46 @@ export default function Results() {
     }
     loadResults();
   }, [user, sessionId, navigate]);
+
+  // Function to send result email via Express backend
+  const sendResultEmail = async (toEmail: string, evaluation: EvaluationResult, session: any) => {
+    try {
+      const response = await fetch('/api/send-result-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toEmail,
+          interviewType: session.interview_type,
+          evaluation,
+        }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: '📧 Results Emailed!',
+          description: `Your interview results have been sent to ${toEmail}`,
+        });
+        return true;
+      } else {
+        const err = await response.json().catch(() => ({}));
+        console.error('Email send failed:', err);
+        toast({
+          title: 'Email Not Sent',
+          description: 'Could not send result email. Please check your backend configuration.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to send result email:', err);
+      toast({
+        title: 'Email Error',
+        description: 'Failed to reach the email service. Check your network connection.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
 
   const loadResults = async () => {
     if (!sessionId) return;
@@ -83,7 +125,7 @@ export default function Results() {
         detailedFeedback: '',
       };
       setResult(evaluation);
-      // Send email only once per results page load
+      // Send email automatically (only once per results page load)
       if (user?.email && !emailSent) {
         setEmailSent(true);
         await sendResultEmail(user.email, evaluation, session);
@@ -91,42 +133,6 @@ export default function Results() {
       setIsLoading(false);
       return;
     }
-    // Function to send result email via Express backend
-    const sendResultEmail = async (toEmail: string, evaluation: EvaluationResult, session: any) => {
-      try {
-        const response = await fetch('/api/send-result-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            toEmail,
-            interviewType: session.interview_type,
-            evaluation,
-          }),
-        });
-
-        if (response.ok) {
-          toast({
-            title: '📧 Results Emailed!',
-            description: `Your interview results have been sent to ${toEmail}`,
-          });
-        } else {
-          const err = await response.json().catch(() => ({}));
-          console.error('Email send failed:', err);
-          toast({
-            title: 'Email Not Sent',
-            description: 'Could not send result email. Please check your Supabase secrets.',
-            variant: 'destructive',
-          });
-        }
-      } catch (err) {
-        console.error('Failed to send result email:', err);
-        toast({
-          title: 'Email Error',
-          description: 'Failed to reach the email service. Check your network connection.',
-          variant: 'destructive',
-        });
-      }
-    };
 
     // Get interview messages for evaluation
     const { data: messages } = await supabase
@@ -135,13 +141,45 @@ export default function Results() {
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true });
 
-    if (!messages || messages.length < 2) {
+    if ((!messages || messages.length < 2) && !isInterrupted) {
       toast({
         title: 'Not enough data',
         description: 'Complete more of the interview to get results.',
         variant: 'destructive',
       });
       navigate(`/interview/${sessionId}`);
+      return;
+    }
+
+    // Handle early interruption penalty
+    if (isInterrupted && (!messages || messages.length < 2)) {
+      const evaluation: EvaluationResult = {
+        technicalScore: 0,
+        hrScore: 0,
+        finalScore: 0,
+        strengths: [],
+        weaknesses: ['Failed to follow interview rules (left the tab multiple times)'],
+        suggestions: ['Stay focused on the interview tab in future attempts'],
+        readinessLevel: 'Beginner',
+        detailedFeedback: 'The interview was automatically terminated because you left the browser tab too many times. Focus is required during the interview process.',
+      };
+      setResult(evaluation);
+      // Save penalty result to db
+      await supabase
+        .from('interview_sessions')
+        .update({
+          status: 'completed',
+          technical_score: evaluation.technicalScore,
+          hr_score: evaluation.hrScore,
+          final_score: evaluation.finalScore,
+          strengths: evaluation.strengths,
+          weaknesses: evaluation.weaknesses,
+          suggestions: evaluation.suggestions,
+          readiness_level: evaluation.readinessLevel,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId);
+      setIsLoading(false);
       return;
     }
 
@@ -233,7 +271,7 @@ export default function Results() {
         })
         .eq('id', sessionId);
 
-      // Send email after results are generated and saved (only once)
+      // Send email automatically after results are generated and saved (only once)
       if (user?.email && !emailSent) {
         setEmailSent(true);
         await sendResultEmail(user.email, evaluation, session);
@@ -372,8 +410,13 @@ export default function Results() {
         </div>
 
         {/* Score Breakdown */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {result.technicalScore !== null && (
+        <div className={`grid gap-6 mb-8 ${
+          (interviewType === 'full') ||
+          (result.technicalScore !== null && result.hrScore !== null && interviewType !== 'hr' && interviewType !== 'technical') 
+            ? 'md:grid-cols-2' 
+            : 'max-w-md mx-auto'
+        }`}>
+          {result.technicalScore !== null && interviewType !== 'hr' && (
             <Card className="shadow-card border-0 animate-slide-up" style={{ animationDelay: '0.1s' }}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -392,7 +435,7 @@ export default function Results() {
             </Card>
           )}
 
-          {result.hrScore !== null && (
+          {result.hrScore !== null && interviewType !== 'technical' && (
             <Card className="shadow-card border-0 animate-slide-up" style={{ animationDelay: '0.2s' }}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

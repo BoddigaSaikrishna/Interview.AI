@@ -17,9 +17,10 @@ interface RequestBody {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   action: 'chat' | 'evaluate';
   currentPhase?: 'technical' | 'hr';
+  resumeText?: string;
 }
 
-const getSystemPrompt = (interviewType: string, programmingLanguage: string | undefined, difficulty: string, currentPhase?: string) => {
+const getSystemPrompt = (interviewType: string, programmingLanguage: string | undefined, difficulty: string, currentPhase?: string, resumeText?: string) => {
   const difficultyDescriptions = {
     beginner: 'entry-level, focusing on fundamentals and basic concepts',
     intermediate: 'mid-level, including practical scenarios and moderate complexity',
@@ -27,6 +28,19 @@ const getSystemPrompt = (interviewType: string, programmingLanguage: string | un
   };
 
   const difficultyLevel = difficultyDescriptions[difficulty as keyof typeof difficultyDescriptions] || difficultyDescriptions.intermediate;
+
+  // Build resume context section if resume is provided
+  const resumeContext = resumeText ? `
+
+IMPORTANT — CANDIDATE'S RESUME:
+The candidate has provided their resume. Use the information below to personalize your questions.
+Reference their specific skills, projects, work experience, and education when asking questions.
+For example, if they mention a React project, ask about their React experience. If they list Python, ask Python-specific questions.
+Do NOT just read back the resume — use it to craft relevant, probing questions.
+
+--- BEGIN RESUME ---
+${resumeText.slice(0, 4000)}
+--- END RESUME ---` : '';
 
   if (interviewType === 'technical' || currentPhase === 'technical') {
     return `You are an experienced technical interviewer conducting a ${difficultyLevel} interview for a ${programmingLanguage || 'software development'} position.
@@ -39,8 +53,9 @@ Your role:
 - After receiving an answer, provide brief feedback and ask the next question
 - Keep track of the interview flow and don't repeat questions
 - Ask exactly 15 technical questions before concluding the technical portion
+${resumeText ? '- PERSONALIZE your questions based on the candidate\'s resume provided below. Reference their projects, skills, and experience.' : ''}
 
-Start by introducing yourself briefly and ask your first technical question.`;
+Start by introducing yourself briefly and ask your first technical question.${resumeContext}`;
   } else if (interviewType === 'hr' || currentPhase === 'hr') {
     return `You are an experienced HR interviewer conducting a ${difficultyLevel} behavioral interview.
 
@@ -51,6 +66,7 @@ Your role:
 - Be warm, professional, and encouraging
 - After receiving an answer, acknowledge their response naturally and transition to the next question
 - Ask exactly 10 HR/behavioral questions before concluding the HR portion
+${resumeText ? '- PERSONALIZE your questions based on the candidate\'s resume. Ask about specific roles, projects, or experiences mentioned in their resume.' : ''}
 
 Evaluate candidates on:
 - Communication clarity
@@ -59,7 +75,7 @@ Evaluate candidates on:
 - Emotional intelligence
 - Relevance of examples
 
-Start by warmly greeting the candidate and asking them to introduce themselves.`;
+Start by warmly greeting the candidate and asking them to introduce themselves.${resumeContext}`;
   } else {
     return `You are an experienced technical interviewer conducting a ${difficultyLevel} interview for a ${programmingLanguage || 'software development'} position.
 
@@ -69,8 +85,9 @@ This is the technical portion of a comprehensive interview. Your role:
 - Adapt difficulty based on responses
 - Be professional but encouraging
 - Ask exactly 15 technical questions in this portion before concluding
+${resumeText ? '- PERSONALIZE your questions based on the candidate\'s resume provided below.' : ''}
 
-Start by introducing yourself and ask your first technical question.`;
+Start by introducing yourself and ask your first technical question.${resumeContext}`;
   }
 };
 
@@ -112,7 +129,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, interviewType, programmingLanguage, difficulty, action, currentPhase } = await req.json() as RequestBody;
+    const { messages, interviewType, programmingLanguage, difficulty, action, currentPhase, resumeText } = await req.json() as RequestBody;
     const HF_API_KEY = Deno.env.get('HF_API_KEY');
     
     if (!HF_API_KEY) {
@@ -127,7 +144,7 @@ serve(async (req) => {
       systemPrompt = getEvaluationPrompt(interviewType);
       shouldStream = false;
     } else {
-      systemPrompt = getSystemPrompt(interviewType, programmingLanguage, difficulty, currentPhase);
+      systemPrompt = getSystemPrompt(interviewType, programmingLanguage, difficulty, currentPhase, resumeText);
     }
 
     // Format messages for Hugging Face
