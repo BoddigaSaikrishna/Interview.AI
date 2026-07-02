@@ -32,7 +32,9 @@ import {
   MicOff,
   Video,
   VideoOff,
-  FileText
+  FileText,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { Message, InterviewType, Difficulty, InterviewPhase } from '@/types/interview';
 
@@ -62,16 +64,23 @@ export default function Interview() {
   const [isListening, setIsListening] = useState(false);
   const [supportsSpeechRecognition, setSupportsSpeechRecognition] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const voiceEnabledRef = useRef<boolean>(true);
   const focusLostCountRef = useRef(0);
   const [focusLostCount, setFocusLostCount] = useState(0);
   const [isLockedDueToFocusLoss, setIsLockedDueToFocusLoss] = useState(false);
   const [showFocusWarning, setShowFocusWarning] = useState(false);
   const [interviewStartTime, setInterviewStartTime] = useState<Date | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem('interview-ai-voice') !== 'false'; } catch { return true; }
+  });
   
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const isStartingCameraRef = useRef(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -279,10 +288,16 @@ export default function Interview() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Not supported');
       }
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      
+      // Request front-facing camera, avoiding virtual rear cameras
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "user" } 
+      });
+
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(e => console.error("Video play failed", e));
       }
       setIsVideoEnabled(true);
     } catch (err: any) {
@@ -303,6 +318,8 @@ export default function Interview() {
         variant: 'destructive',
       });
       setIsVideoEnabled(false);
+    } finally {
+      isStartingCameraRef.current = false;
     }
   };
 
@@ -325,10 +342,57 @@ export default function Interview() {
     }
   };
 
-  // Cleanup camera on unmount
+  // ── Voice-Over (Text-to-Speech) ─────────────────────────────────────────────
+  const speakText = (text: string) => {
+    if (!voiceEnabledRef.current || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utteranceRef.current = utterance;
+
+    const applyVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const preferred =
+        voices.find(v =>
+          v.name.includes('Google UK English Female') ||
+          v.name.includes('Google US English') ||
+          v.name.includes('Samantha') ||
+          v.name.includes('Karen')
+        ) || voices.find(v => v.lang.startsWith('en'));
+      if (preferred) utterance.voice = preferred;
+    };
+
+    applyVoice();
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.addEventListener('voiceschanged', applyVoice, { once: true } as any);
+    }
+
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const toggleVoice = () => {
+    setVoiceEnabled(prev => {
+      const next = !prev;
+      voiceEnabledRef.current = next;
+      localStorage.setItem('interview-ai-voice', String(next));
+      if (!next) {
+        window.speechSynthesis?.cancel();
+        setIsSpeaking(false);
+      }
+      return next;
+    });
+  };
+
+  // Cleanup camera and speech synthesis on unmount
   useEffect(() => {
     return () => {
       stopCamera();
+      window.speechSynthesis?.cancel();
     };
   }, []);
 
@@ -341,6 +405,16 @@ export default function Interview() {
       }
     }
   }, [isInitializing]);
+
+  // Robustly sync stream to video element
+  useEffect(() => {
+    if (videoRef.current && streamRef.current && isVideoEnabled) {
+      if (videoRef.current.srcObject !== streamRef.current) {
+        videoRef.current.srcObject = streamRef.current;
+        videoRef.current.play().catch(e => console.log('Auto-play failed:', e));
+      }
+    }
+  });
 
   // Detect when the user switches tabs.
   useEffect(() => {
@@ -489,6 +563,9 @@ export default function Interview() {
         }
       }
 
+      // Speak the completed AI question aloud
+      speakText(assistantMessage);
+
       // Save message to database
       await supabase.from('interview_messages').insert({
         session_id: sessionId,
@@ -519,6 +596,10 @@ export default function Interview() {
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
+
+    // Stop any ongoing AI speech the moment the user submits their answer
+    window.speechSynthesis?.cancel();
+    setIsSpeaking(false);
 
     const responseTime = startTime ? Math.round((Date.now() - startTime.getTime()) / 1000) : undefined;
     
@@ -723,6 +804,16 @@ export default function Interview() {
                 {isVideoEnabled ? <Video className="w-4 h-4 mr-2" /> : <VideoOff className="w-4 h-4 mr-2" />}
                 {isVideoEnabled ? 'Video On' : 'Video Off'}
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleVoice}
+                className={voiceEnabled ? 'text-primary border-primary/50' : 'text-muted-foreground'}
+                title={voiceEnabled ? 'Turn off AI voice' : 'Turn on AI voice'}
+              >
+                {voiceEnabled ? <Volume2 className="w-4 h-4 mr-2" /> : <VolumeX className="w-4 h-4 mr-2" />}
+                {voiceEnabled ? 'Voice On' : 'Voice Off'}
+              </Button>
               {/* Timer */}
               <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg">
                 <Timer className="w-4 h-4 text-primary" />
@@ -755,17 +846,24 @@ export default function Interview() {
       </header>
 
       {/* Floating Video Preview */}
-      {isVideoEnabled && (
-        <div className="fixed top-24 right-4 z-40 w-32 h-44 bg-black/80 border border-primary/20 rounded-xl overflow-hidden shadow-2xl flex items-center justify-center animate-in fade-in zoom-in slide-in-from-top-4 duration-300">
-          <video 
-            ref={videoRef} 
-            autoPlay 
-            playsInline 
-            muted 
-            className="w-full h-full object-cover transform -scale-x-100" 
-          />
-        </div>
-      )}
+      <div className={`fixed top-24 right-4 z-40 w-32 h-44 bg-black/80 border border-primary/20 rounded-xl overflow-hidden shadow-2xl flex items-center justify-center animate-in fade-in zoom-in slide-in-from-top-4 duration-300 ${isVideoEnabled ? '' : 'hidden'}`}>
+        <video 
+          ref={(el) => {
+            videoRef.current = el;
+            if (el && streamRef.current && el.srcObject !== streamRef.current) {
+              el.srcObject = streamRef.current;
+            }
+          }}
+          autoPlay 
+          playsInline 
+          muted 
+          onLoadedMetadata={(e) => {
+            const video = e.target as HTMLVideoElement;
+            video.play().catch(console.error);
+          }}
+          className="w-full h-full object-cover scale-x-[-1]" 
+        />
+      </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto">
@@ -778,10 +876,10 @@ export default function Interview() {
                   message.role === 'user' ? 'flex-row-reverse' : ''
                 }`}
               >
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                   message.role === 'user' 
                     ? 'bg-primary text-primary-foreground' 
-                    : 'bg-accent text-accent-foreground'
+                    : `bg-accent text-accent-foreground${isSpeaking ? ' ring-2 ring-primary ring-offset-1 ring-offset-background animate-pulse' : ''}`
                 }`}>
                   {message.role === 'user' ? (
                     <User className="w-4 h-4" />
@@ -827,6 +925,18 @@ export default function Interview() {
       {/* Input */}
       <div className="sticky bottom-0 bg-card/95 backdrop-blur-lg border-t">
         <div className="container mx-auto px-4 py-4 max-w-3xl">
+          {/* AI Speaking Indicator */}
+          {isSpeaking && voiceEnabled && (
+            <div className="flex items-center justify-center gap-2 mb-3 py-2 px-4 bg-primary/10 border border-primary/30 rounded-lg">
+              <Volume2 className="w-4 h-4 text-primary animate-pulse" />
+              <span className="text-primary font-medium text-sm">AI Interviewer is speaking...</span>
+              <div className="flex gap-0.5">
+                <span className="w-1 h-4 bg-primary rounded animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1 h-4 bg-primary rounded animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1 h-4 bg-primary rounded animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          )}
           {/* Voice Recording Indicator */}
           {isListening && (
             <div className="flex items-center justify-center gap-2 mb-3 py-2 px-4 bg-red-500/10 border border-red-500/30 rounded-lg animate-pulse">

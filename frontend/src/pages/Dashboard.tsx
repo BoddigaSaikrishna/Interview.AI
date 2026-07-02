@@ -325,7 +325,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <RadioGroup
-                  value={companyType}
+                  value={companyType || ""}
                   onValueChange={(value) => setCompanyType(value as CompanyType)}
                   className="grid sm:grid-cols-2 gap-4"
                 >
