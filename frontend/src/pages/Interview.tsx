@@ -80,7 +80,6 @@ export default function Interview() {
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const isStartingCameraRef = useRef(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -318,8 +317,6 @@ export default function Interview() {
         variant: 'destructive',
       });
       setIsVideoEnabled(false);
-    } finally {
-      isStartingCameraRef.current = false;
     }
   };
 
@@ -414,7 +411,7 @@ export default function Interview() {
         videoRef.current.play().catch(e => console.log('Auto-play failed:', e));
       }
     }
-  });
+  }, [isVideoEnabled]);
 
   // Detect when the user switches tabs.
   useEffect(() => {

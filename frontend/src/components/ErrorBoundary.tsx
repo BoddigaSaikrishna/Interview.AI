@@ -1,10 +1,11 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 
+type Props = { children: React.ReactNode };
 type State = { hasError: boolean; error?: Error | null };
 
-export default class ErrorBoundary extends React.Component<{}, State> {
-  constructor(props: {}) {
+export default class ErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
     super(props);
     this.state = { hasError: false, error: null };
   }
