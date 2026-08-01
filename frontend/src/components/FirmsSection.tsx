@@ -106,7 +106,7 @@ export const FirmsSection: React.FC = () => {
             Get Ready for Jobs at <span className="text-gradient">Leading Firms</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            InterviewAI users trust our advanced mock interview platform to prepare for opportunities 
+            Interview.AI users trust our advanced mock interview platform to prepare for opportunities 
             at leading companies. Hone your skills with realistic simulations and get ready to 
             succeed at top employers like those featured below and many more!
           </p>

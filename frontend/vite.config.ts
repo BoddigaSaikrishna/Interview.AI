@@ -10,8 +10,15 @@ export default defineConfig(async ({ mode }) => {
 
   return {
     server: {
-      host: "::",
-      port: 8080,
+      host: "127.0.0.1",
+      port: 5173,
+      strictPort: true,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+        },
+      },
     },
     plugins,
     resolve: {

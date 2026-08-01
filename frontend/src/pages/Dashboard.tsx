@@ -172,7 +172,7 @@ export default function Dashboard() {
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <Target className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-xl">InterviewAI</span>
+            <span className="font-display font-bold text-xl">Interview.AI</span>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground hidden sm:block">

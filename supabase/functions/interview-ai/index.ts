@@ -155,38 +155,67 @@ serve(async (req) => {
 
     console.log(`Processing ${action} request for ${interviewType} interview`);
 
-    // Use Hugging Face Router API with Llama 3.2 (OpenAI-compatible)
-    const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${HF_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/Meta-Llama-3-8B-Instruct',
-        messages: formattedMessages,
-        max_tokens: 1024,
-        temperature: 0.7,
-      }),
-    });
+    // Fallback list of robust models supported by Hugging Face Router
+    const FALLBACK_MODELS = [
+      Deno.env.get('AI_MODEL') || 'meta-llama/Llama-3.1-8B-Instruct',
+      'Qwen/Qwen2.5-72B-Instruct',
+      'mistralai/Mixtral-8x7B-Instruct-v0.1',
+      'HuggingFaceH4/zephyr-7b-beta'
+    ];
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Hugging Face API error:', response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    let response;
+    let successfulModel = null;
+    let lastErrorText = '';
+
+    for (const model of FALLBACK_MODELS) {
+      console.log(`Trying model: ${model}`);
+      try {
+        response = await fetch('https://router.huggingface.co/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${HF_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: formattedMessages,
+            max_tokens: 1024,
+            temperature: 0.7,
+          }),
         });
+
+        if (response.ok) {
+          successfulModel = model;
+          console.log(`Successfully connected to model: ${model}`);
+          break; // Success! Exit the fallback loop.
+        }
+
+        const errorText = await response.text();
+        lastErrorText = errorText;
+        console.warn(`Model ${model} failed with status ${response.status}:`, errorText);
+
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }), {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        if (response.status === 401) {
+          return new Response(JSON.stringify({ error: 'Invalid API key. Please check your Hugging Face API key.' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        // If it's a model error (like 400 invalid model), continue to the next model in the list
+      } catch (e) {
+        console.warn(`Fetch request failed for model ${model}:`, e);
+        lastErrorText = e instanceof Error ? e.message : String(e);
       }
-      if (response.status === 401) {
-        return new Response(JSON.stringify({ error: 'Invalid API key. Please check your Hugging Face API key.' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      throw new Error('AI service error: ' + errorText);
+    }
+
+    if (!response || !response.ok) {
+      console.error('Exhausted all fallback models. Last error:', lastErrorText);
+      throw new Error('AI service error: ' + lastErrorText);
     }
 
     const data = await response.json();

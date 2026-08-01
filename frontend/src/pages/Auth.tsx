@@ -85,7 +85,7 @@ export default function Auth() {
 
     toast({
       title: 'Account created!',
-      description: 'Welcome to InterviewAI. You are signed in.',
+      description: 'Welcome to Interview.AI. You are signed in.',
     });
     navigate('/dashboard');
     setIsLoading(false);
@@ -107,7 +107,7 @@ export default function Auth() {
             <GraduationCap className="w-8 h-8 text-primary-foreground" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-display font-bold">InterviewAI</CardTitle>
+            <CardTitle className="text-2xl font-display font-bold">Interview.AI</CardTitle>
             <CardDescription className="flex items-center justify-center gap-1 mt-1">
               <Sparkles className="w-4 h-4" />
               AI-Powered Interview Practice

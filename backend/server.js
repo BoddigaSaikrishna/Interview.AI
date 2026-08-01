@@ -98,7 +98,7 @@ function buildHtmlEmail(toEmail, interviewType, evaluation) {
           <!-- Header -->
           <tr>
             <td style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);padding:36px 32px;text-align:center;">
-              <div style="font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">🤖 Interview AI</div>
+              <div style="font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">🤖 Interview.AI</div>
               <div style="color:rgba(255,255,255,0.85);font-size:14px;margin-top:4px;">${interviewLabel} Interview • Results Report</div>
             </td>
           </tr>
@@ -185,8 +185,8 @@ function buildHtmlEmail(toEmail, interviewType, evaluation) {
           <tr>
             <td style="background:#f9fafb;padding:20px 32px;text-align:center;border-top:1px solid #e5e7eb;">
               <div style="color:#9ca3af;font-size:12px;">
-                This email was sent automatically by <strong>Interview AI</strong> because you completed an interview.<br/>
-                © 2026 Interview AI. All rights reserved.
+                This email was sent automatically by <strong>Interview.AI</strong> because you completed an interview.<br/>
+                © 2026 Interview.AI. All rights reserved.
               </div>
             </td>
           </tr>
@@ -243,7 +243,7 @@ app.post("/api/send-result-email", async (req, res) => {
       },
       body: JSON.stringify({
         sender: {
-          name: "Interview AI",
+          name: "Interview.AI",
           email: process.env.EMAIL_FROM_ADDRESS || "noreply@interviewai.app",
         },
         to: [{ email: toEmail }],
