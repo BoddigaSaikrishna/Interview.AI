@@ -1,5 +1,5 @@
 // send-result-email/index.ts
-// Supabase Edge Function — sends interview result email via Brevo (sib-api-v3-sdk)
+// Supabase Edge Function — sends interview result email via Brevo REST API
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -196,6 +196,8 @@ serve(async (req) => {
 
   try {
     const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+    const EMAIL_FROM = Deno.env.get("EMAIL_FROM_ADDRESS") || "noreply@interviewai.app";
+
     if (!BREVO_API_KEY) {
       throw new Error("BREVO_API_KEY is not configured in Supabase secrets.");
     }
@@ -213,7 +215,8 @@ serve(async (req) => {
     const subject = `Your ${interviewType.charAt(0).toUpperCase() + interviewType.slice(1)} Interview Results — Score: ${evaluation.finalScore}/100 🎯`;
     const htmlContent = buildHtmlEmail(toEmail, interviewType, evaluation);
 
-    // Call Brevo Transactional Email API
+    console.log(`Sending email to: ${toEmail} from: ${EMAIL_FROM}`);
+
     const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -224,7 +227,7 @@ serve(async (req) => {
       body: JSON.stringify({
         sender: {
           name: "Interview.AI",
-          email: Deno.env.get("EMAIL_FROM_ADDRESS") || "noreply@interviewai.app",
+          email: EMAIL_FROM,
         },
         to: [{ email: toEmail }],
         subject,
@@ -232,14 +235,17 @@ serve(async (req) => {
       }),
     });
 
+    const responseText = await brevoResponse.text();
+    console.log(`Brevo response: ${brevoResponse.status} — ${responseText}`);
+
     if (!brevoResponse.ok) {
-      const errText = await brevoResponse.text();
-      console.error("Brevo API error:", brevoResponse.status, errText);
-      throw new Error(`Brevo API error: ${errText}`);
+      throw new Error(`Brevo API error (${brevoResponse.status}): ${responseText}`);
     }
 
-    const data = await brevoResponse.json();
-    console.log("Email sent successfully to:", toEmail, "messageId:", data.messageId);
+    let data: any = {};
+    try { data = JSON.parse(responseText); } catch { /* ignore */ }
+
+    console.log("Email sent successfully. messageId:", data.messageId);
 
     return new Response(
       JSON.stringify({ success: true, messageId: data.messageId }),

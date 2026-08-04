@@ -50,28 +50,25 @@ export default function Results() {
     loadResults();
   }, [user, sessionId, navigate]);
 
-  // Function to send result email via Express backend
+  // Function to send result email via Supabase Edge Function
   const sendResultEmail = async (toEmail: string, evaluation: EvaluationResult, session: any) => {
     try {
-      const response = await fetch('/api/send-result-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('send-result-email', {
+        body: {
           toEmail,
           interviewType: session.interview_type,
           evaluation,
-        }),
+        },
       });
 
-      if (response.ok) {
+      if (!error) {
         toast({
           title: '📧 Results Emailed!',
           description: `Your interview results have been sent to ${toEmail}`,
         });
         return true;
       } else {
-        const err = await response.json().catch(() => ({}));
-        console.error('Email send failed:', err);
+        console.error('Email send failed:', error);
         toast({
           title: 'Email Not Sent',
           description: 'Could not send result email. Please check your backend configuration.',
