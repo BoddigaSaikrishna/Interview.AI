@@ -153,7 +153,7 @@ serve(async (req) => {
       ...messages
     ];
 
-    console.log(`Processing ${action} request for ${interviewType} interview`);
+    console.log(\`Processing \${action} request for \${interviewType} interview\`);
 
     // Fallback list of robust models supported by Hugging Face Router
     const FALLBACK_MODELS = [
@@ -168,12 +168,12 @@ serve(async (req) => {
     let lastErrorText = '';
 
     for (const model of FALLBACK_MODELS) {
-      console.log(`Trying model: ${model}`);
+      console.log(\`Trying model: \${model}\`);
       try {
         response = await fetch('https://router.huggingface.co/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${HF_API_KEY}`,
+            'Authorization': \`Bearer \${HF_API_KEY}\`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -186,13 +186,13 @@ serve(async (req) => {
 
         if (response.ok) {
           successfulModel = model;
-          console.log(`Successfully connected to model: ${model}`);
+          console.log(\`Successfully connected to model: \${model}\`);
           break; // Success! Exit the fallback loop.
         }
 
         const errorText = await response.text();
         lastErrorText = errorText;
-        console.warn(`Model ${model} failed with status ${response.status}:`, errorText);
+        console.warn(\`Model \${model} failed with status \${response.status}:\`, errorText);
 
         if (response.status === 429) {
           return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }), {
@@ -208,7 +208,7 @@ serve(async (req) => {
         }
         // If it's a model error (like 400 invalid model), continue to the next model in the list
       } catch (e) {
-        console.warn(`Fetch request failed for model ${model}:`, e);
+        console.warn(\`Fetch request failed for model \${model}:\`, e);
         lastErrorText = e instanceof Error ? e.message : String(e);
       }
     }
@@ -254,7 +254,7 @@ serve(async (req) => {
       });
     } else {
       // For chat, simulate streaming format that frontend expects
-      const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: [DONE]\n\n`;
+      const sseData = \`data: \${JSON.stringify({ choices: [{ delta: { content } }] })}\\n\\ndata: [DONE]\\n\\n\`;
       return new Response(sseData, {
         headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
       });
